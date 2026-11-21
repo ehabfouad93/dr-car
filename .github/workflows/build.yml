@@ -1,0 +1,73 @@
+# Builds the desktop app (Windows + Linux) and the Android APK on every push.
+# Download the results from the run's "Artifacts" section on GitHub.
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.1
+          channel: stable
+      - run: flutter pub get
+      - run: flutter test
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.1
+          channel: stable
+      - run: flutter build windows --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoganDoctor-windows
+          path: build/windows/x64/runner/Release/
+
+  linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.1
+          channel: stable
+      - run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev ninja-build
+      - run: flutter build linux --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoganDoctor-linux
+          path: build/linux/x64/release/bundle/
+
+  android:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.50.1
+          channel: stable
+      # Set these two in GitHub → Settings → Secrets and variables → Actions → Variables.
+      - run: >
+          flutter build apk --release
+          --dart-define=SUPABASE_URL=${{ vars.SUPABASE_URL }}
+          --dart-define=SUPABASE_ANON_KEY=${{ vars.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LoganDoctor-android
+          path: build/app/outputs/flutter-apk/app-release.apk
