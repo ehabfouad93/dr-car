@@ -76,7 +76,8 @@ jobs:
   # (tag "latest"), replacing the files on every push to main.
   release:
     needs: [windows, android]
-    if: github.ref == 'refs/heads/main'
+    # Publish whatever built, so a failing Android build never blocks the Windows app.
+    if: always() && github.ref == 'refs/heads/main' && (needs.windows.result == 'success' || needs.android.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -87,8 +88,8 @@ jobs:
       - name: Package
         run: |
           cd dist
-          (cd LoganDoctor-windows && zip -qr ../DrCar-Windows.zip .)
-          cp LoganDoctor-android/app-release.apk DrCar.apk
+          if [ -d LoganDoctor-windows ]; then (cd LoganDoctor-windows && zip -qr ../DrCar-Windows.zip .); fi
+          if [ -f LoganDoctor-android/app-release.apk ]; then cp LoganDoctor-android/app-release.apk DrCar.apk; fi
           ls -la
       - uses: softprops/action-gh-release@v2
         with:
@@ -100,6 +101,7 @@ jobs:
             - **DrCar-Windows.zip**: unzip anywhere, then run `logan_doctor.exe`.
           prerelease: false
           make_latest: true
+          fail_on_unmatched_files: false
           files: |
             dist/DrCar.apk
             dist/DrCar-Windows.zip
