@@ -71,3 +71,35 @@ jobs:
         with:
           name: LoganDoctor-android
           path: build/app/outputs/flutter-apk/app-release.apk
+
+  # Publishes the Windows app and the APK on the repository's Releases page
+  # (tag "latest"), replacing the files on every push to main.
+  release:
+    needs: [windows, android]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Package
+        run: |
+          cd dist
+          (cd LoganDoctor-windows && zip -qr ../DrCar-Windows.zip .)
+          cp LoganDoctor-android/app-release.apk DrCar.apk
+          ls -la
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Dr Car — latest build
+          body: |
+            Automatic build of the newest code on main.
+            - **DrCar.apk**: install on an Android phone (allow "install from unknown sources").
+            - **DrCar-Windows.zip**: unzip anywhere, then run `logan_doctor.exe`.
+          prerelease: false
+          make_latest: true
+          files: |
+            dist/DrCar.apk
+            dist/DrCar-Windows.zip
