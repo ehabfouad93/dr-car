@@ -43,7 +43,8 @@ dependencies:
   provider: ^6.1.5+1
   file_picker: ^13.4.1
   path_provider: ^2.1.6
-  flutter_libserialport: ^0.6.0
+  flutter_libserialport:
+    path: packages/flutter_libserialport
 
 dev_dependencies:
   flutter_test:
